@@ -21,7 +21,7 @@ function migrateConfig(c: Record<string, unknown>): HouseholdConfig {
   delete c.propertyEquity;
   if (c.originalLoanAmount === undefined) c.originalLoanAmount = 0;
   if (c.monthlyMortgagePayment === undefined) c.monthlyMortgagePayment = 0;
-  if (c.mortgageRate === undefined) c.mortgageRate = 0.03;
+  if (c.mortgageRate === undefined) c.mortgageRate = 0.015;
   if (c.mortgageCommencementDate === undefined) c.mortgageCommencementDate = "";
   // Migrate old remainingMortgageTerm to maturity date
   if (c.mortgageMaturityDate === undefined) {

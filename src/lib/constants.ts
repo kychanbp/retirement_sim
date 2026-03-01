@@ -27,7 +27,7 @@ export const EMPTY_CONFIG: HouseholdConfig = {
   // Property / Mortgage
   originalLoanAmount: 0,
   monthlyMortgagePayment: 0,
-  mortgageRate: 0.03,
+  mortgageRate: 0.015,
   mortgageCommencementDate: "", // empty = no mortgage
   mortgageMaturityDate: "",
   replacementHomeCost: 0,

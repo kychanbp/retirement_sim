@@ -24,7 +24,7 @@ function backfillConfig(parsed: Record<string, unknown>): HouseholdConfig {
   delete parsed.propertyEquity;
   if (parsed.originalLoanAmount === undefined) parsed.originalLoanAmount = 0;
   if (parsed.monthlyMortgagePayment === undefined) parsed.monthlyMortgagePayment = 0;
-  if (parsed.mortgageRate === undefined) parsed.mortgageRate = 0.03;
+  if (parsed.mortgageRate === undefined) parsed.mortgageRate = 0.015;
   if (parsed.mortgageCommencementDate === undefined) parsed.mortgageCommencementDate = "";
   // Migrate old remainingMortgageTerm (months) to maturity date
   if (parsed.mortgageMaturityDate === undefined) {
