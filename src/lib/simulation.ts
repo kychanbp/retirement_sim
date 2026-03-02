@@ -23,6 +23,8 @@ interface SimOptions {
   storePaths?: boolean;
   /** RNG seed */
   seed?: number;
+  /** Reference date for mortgage valuation (defaults to now) */
+  valuationDate?: Date;
 }
 
 /**
@@ -38,6 +40,7 @@ export function runSimulation(
     forceSequenceRisk = false,
     storePaths = true,
     seed = 42,
+    valuationDate = new Date(),
   } = options;
 
   const monthsToRetirement =
@@ -62,7 +65,7 @@ export function runSimulation(
 
   // Starting wealth — liquid assets only (property tracked separately)
   const startingLiquid = config.liquidAssets;
-  const mortgage = computeMortgageSummary(config);
+  const mortgage = computeMortgageSummary(config, valuationDate);
   const startingProperty = includeProperty ? mortgage.currentEquity : 0;
   const txCost = config.propertyTransactionCost;
 
@@ -191,7 +194,7 @@ export function runSimulation(
     }
 
     terminalWealth[sim] = w + propEquity;
-    if (w + propEquity > 0) successCount++;
+    if (!ruined) successCount++;
   }
 
   // Compute outputs
@@ -283,6 +286,7 @@ export function runSimulation(
     survivalByAge,
     totalMonths,
     retirementMonth: monthsToRetirement,
+    valuationDate: valuationDate.toISOString(),
   };
 }
 
@@ -324,6 +328,19 @@ export function findSafeSpending(
     drawdownMonths > 0 ? (totalWealth / drawdownMonths) * 3 : config.monthlySpending * 3
   );
 
+  // Expand hi if success rate at the upper bound still meets the target.
+  // At most 5 doublings (32× initial hi) to keep simulation cost bounded.
+  for (let exp = 0; exp < 5; exp++) {
+    const rate = runSimulationQuick(
+      { ...config, monthlySpending: hi },
+      includeProperty,
+      nSims
+    );
+    if (rate < targetRate) break;
+    hi = Math.min(hi * 2, 1_000_000);
+    if (hi >= 1_000_000) break;
+  }
+
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2;
     const rate = runSimulationQuick(
@@ -346,16 +363,20 @@ export function findSafeSpending(
 /**
  * Compute remaining mortgage months from a maturity date string (YYYY-MM-DD).
  * Returns 0 if the date is empty, invalid, or in the past.
+ * @param valuationDate — reference date (defaults to now); pass a stable date
+ *   so saved reports don't drift when re-displayed on a different day.
  */
-export function getRemainingMortgageMonths(maturityDate: string): number {
+export function getRemainingMortgageMonths(
+  maturityDate: string,
+  valuationDate: Date = new Date()
+): number {
   if (!maturityDate) return 0;
-  const now = new Date();
   const maturity = new Date(maturityDate + "T00:00:00");
   if (isNaN(maturity.getTime())) return 0;
 
   const months =
-    (maturity.getFullYear() - now.getFullYear()) * 12 +
-    (maturity.getMonth() - now.getMonth());
+    (maturity.getFullYear() - valuationDate.getFullYear()) * 12 +
+    (maturity.getMonth() - valuationDate.getMonth());
   return Math.max(0, months);
 }
 
@@ -387,10 +408,13 @@ export interface MortgageSummary {
  * the outstanding balance, avoiding reverse-computation rounding errors.
  * Property equity = market value − outstanding balance.
  */
-export function computeMortgageSummary(config: HouseholdConfig): MortgageSummary {
+export function computeMortgageSummary(
+  config: HouseholdConfig,
+  valuationDate: Date = new Date()
+): MortgageSummary {
   const r = config.mortgageRate / 12;
   const totalTenureMonths = monthsBetween(config.mortgageCommencementDate, config.mortgageMaturityDate);
-  const remainingMonths = getRemainingMortgageMonths(config.mortgageMaturityDate);
+  const remainingMonths = getRemainingMortgageMonths(config.mortgageMaturityDate, valuationDate);
   const elapsedMonths = totalTenureMonths - remainingMonths;
 
   const originalLoan = config.originalLoanAmount;

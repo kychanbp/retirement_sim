@@ -158,7 +158,7 @@ function PdfFanChart({
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-2">{title}</h3>
-      <ComposedChart width={1060} height={400} data={data} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+      <ComposedChart width={734} height={350} data={data} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="age" label={{ value: "Age", position: "insideBottom", offset: -10 }} tick={{ fontSize: 12 }} />
         <YAxis tickFormatter={(v) => formatCurrency(v, true)} tick={{ fontSize: 12 }} width={80} />
@@ -188,7 +188,7 @@ function PdfHistogram({ terminalWealth, title }: { terminalWealth: number[]; tit
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-2">{title}</h3>
-      <BarChart width={500} height={320} data={bins} margin={{ top: 10, right: 20, left: 20, bottom: 20 }}>
+      <BarChart width={350} height={280} data={bins} margin={{ top: 10, right: 20, left: 20, bottom: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="binCenter" tickFormatter={(v) => formatCurrency(v, true)} tick={{ fontSize: 10 }} label={{ value: "Terminal Wealth", position: "insideBottom", offset: -10 }} />
         <YAxis tick={{ fontSize: 11 }} label={{ value: "Frequency", angle: -90, position: "insideLeft", offset: 10 }} />
@@ -216,7 +216,7 @@ function PdfSurvivalCurve({
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-2">{title}</h3>
-      <LineChart width={500} height={320} data={survivalByAge} margin={{ top: 10, right: 20, left: 20, bottom: 20 }}>
+      <LineChart width={350} height={280} data={survivalByAge} margin={{ top: 10, right: 20, left: 20, bottom: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="age" label={{ value: "Age", position: "insideBottom", offset: -10 }} tick={{ fontSize: 12 }} />
         <YAxis domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 12 }} label={{ value: "% Solvent", angle: -90, position: "insideLeft", offset: 10 }} />
@@ -311,10 +311,6 @@ export const PdfReportLayout = forwardRef<HTMLDivElement, PdfReportLayoutProps>(
       <div
         ref={ref}
         style={{
-          width: 1120,
-          position: "absolute",
-          left: -9999,
-          top: 0,
           background: "white",
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
@@ -331,7 +327,7 @@ export const PdfReportLayout = forwardRef<HTMLDivElement, PdfReportLayoutProps>(
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Household Profile
             </h3>
-            <div className="grid grid-cols-5 gap-3 text-sm">
+            <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
                 <span className="text-gray-500">Current age</span>
                 <p className="font-medium">{config.currentAge}</p>

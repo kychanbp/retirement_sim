@@ -64,6 +64,7 @@ export interface SimulationResult {
   survivalByAge: { age: number; fractionSolvent: number }[];
   totalMonths: number;
   retirementMonth: number;
+  valuationDate: string; // ISO date string — date at which mortgage was valued
 }
 
 // ─── Sensitivity Analysis ──────────────────────────────────────

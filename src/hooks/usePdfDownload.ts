@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import type { FullResults } from "../lib/types";
 
+const PRINT_ID = "__pdf-report__";
+
 export function usePdfDownload(results: FullResults) {
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -11,58 +13,97 @@ export function usePdfDownload(results: FullResults) {
     setIsGenerating(true);
 
     let container: HTMLDivElement | null = null;
-    let root: ReturnType<typeof import("react-dom/client").createRoot> | null = null;
+    let styleEl: HTMLStyleElement | null = null;
+    let root: ReturnType<typeof import("react-dom/client").createRoot> | null =
+      null;
+
+    function cleanup() {
+      try {
+        root?.unmount();
+      } catch {}
+      root = null;
+      container?.remove();
+      styleEl?.remove();
+      container = null;
+      styleEl = null;
+      setIsGenerating(false);
+    }
 
     try {
-      // Dynamically import React rendering and report components
-      const [{ createElement }, { createRoot }, { PdfReportLayout }, { generatePdfFromElement }] =
+      const [{ createElement }, { createRoot }, { PdfReportLayout }] =
         await Promise.all([
           import("react"),
           import("react-dom/client"),
           import("../components/PdfReportLayout"),
-          import("../lib/generatePdf"),
         ]);
 
-      // Create off-screen container
+      // Off-screen container — needs layout dimensions for Recharts SVGs to render,
+      // but invisible to the user. @media print overrides make it visible when printing.
       container = document.createElement("div");
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
-      container.style.top = "0";
+      container.id = PRINT_ID;
+      Object.assign(container.style, {
+        position: "fixed",
+        left: "-10000px",
+        top: "0",
+        width: "794px",
+        background: "white",
+        zIndex: "-1",
+      });
       document.body.appendChild(container);
 
-      // Create a wrapper div to capture the ref
-      const refHolder: { current: HTMLDivElement | null } = { current: null };
+      // Inject print-only styles:
+      // - Hide every sibling of the report container
+      // - Make the report container visible and full-width
+      // - Landscape A4 page with reasonable margins
+      // - Avoid breaking inside chart sections
+      styleEl = document.createElement("style");
+      styleEl.textContent = `
+        @media print {
+          body > *:not(#${PRINT_ID}) {
+            display: none !important;
+          }
+          #${PRINT_ID} {
+            position: static !important;
+            left: auto !important;
+            width: 100% !important;
+            z-index: auto !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+          [data-pdf-section] {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          [data-pdf-section="methodology"] {
+            break-inside: auto;
+            page-break-inside: auto;
+          }
+        }
+      `;
+      document.head.appendChild(styleEl);
 
-      // Render PdfReportLayout into the container
+      // Render the report layout
       root = createRoot(container);
-      root.render(
-        createElement(PdfReportLayout, {
-          results,
-          ref: (el: HTMLDivElement | null) => {
-            refHolder.current = el;
-          },
-        })
-      );
+      root.render(createElement(PdfReportLayout, { results }));
 
-      // Wait for Recharts SVGs to paint
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait for Recharts SVGs to paint (they need a couple of animation frames)
+      await new Promise((r) => setTimeout(r, 800));
 
-      // Find the actual report div (the one with data-pdf-section children)
-      const reportEl = refHolder.current ?? container.firstElementChild as HTMLElement;
-      if (!reportEl) throw new Error("Report layout did not render");
+      // Use afterprint event for cleanup (handles both sync and async browsers)
+      window.addEventListener("afterprint", cleanup, { once: true });
 
-      await generatePdfFromElement(reportEl as HTMLElement, "retirement-report.pdf");
+      // Trigger the browser's native print dialog (Save as PDF option available)
+      window.print();
+
+      // Fallback: if afterprint doesn't fire within 2 seconds, clean up anyway
+      setTimeout(() => {
+        if (container) cleanup();
+      }, 2000);
     } catch (err) {
       console.error("PDF generation failed:", err);
-    } finally {
-      // Cleanup
-      if (root) {
-        root.unmount();
-      }
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
-      setIsGenerating(false);
+      cleanup();
     }
   }, [results, isGenerating]);
 

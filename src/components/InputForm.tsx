@@ -68,15 +68,21 @@ function saveInputs(config: HouseholdConfig) {
 
 function validate(config: HouseholdConfig): string | null {
   if (config.liquidAssets <= 0 && config.propertyValue <= 0)
-    return "Enter at least one asset value.";
+    return "Enter a positive value for liquid assets or property value (or both).";
   if (config.monthlySpending <= 0)
     return "Enter monthly spending.";
   if (config.currentAge <= 0 || config.currentAge > 100)
     return "Enter a valid current age.";
+  if (!Number.isInteger(config.currentAge))
+    return "Current age must be a whole number.";
   if (config.retirementAge <= config.currentAge)
     return "Retirement age must be after current age.";
+  if (!Number.isInteger(config.retirementAge))
+    return "Retirement age must be a whole number.";
   if (config.deathAge <= config.retirementAge)
     return "Planning age must be after retirement age.";
+  if (!Number.isInteger(config.deathAge))
+    return "Planning age must be a whole number.";
   if (config.accumEquity < 0 || config.accumEquity > 1)
     return "Accumulation equity allocation must be between 0% and 100%.";
   if (config.withdrawEquity < 0 || config.withdrawEquity > 1)
@@ -89,6 +95,8 @@ function validate(config: HouseholdConfig): string | null {
     return "Enter a mortgage maturity date (or set monthly payment to 0).";
   if (config.monthlyMortgagePayment > 0 && !config.mortgageCommencementDate)
     return "Enter a loan commencement date (or set monthly payment to 0).";
+  if (config.mortgageCommencementDate && config.mortgageCommencementDate > new Date().toISOString().slice(0, 10))
+    return "Commencement date must not be in the future.";
   if (config.mortgageMaturityDate && config.monthlyMortgagePayment === 0)
     return "Enter a monthly mortgage payment (or clear the dates).";
   if (config.mortgageMaturityDate && getRemainingMortgageMonths(config.mortgageMaturityDate) === 0)
@@ -96,10 +104,15 @@ function validate(config: HouseholdConfig): string | null {
   if (config.mortgageCommencementDate && config.mortgageMaturityDate &&
       config.mortgageCommencementDate >= config.mortgageMaturityDate)
     return "Commencement date must be before maturity date.";
+  if (config.monthlyMortgagePayment > 0 && config.mortgageRate > 0 &&
+      config.monthlyMortgagePayment <= config.originalLoanAmount * config.mortgageRate / 12)
+    return "Payment does not cover interest.";
   if (config.propertyTransactionCost < 0 || config.propertyTransactionCost > 1)
     return "Property transaction cost must be between 0% and 100%.";
   if (config.nSimulations < 100)
     return "Run at least 100 simulations.";
+  if (!Number.isInteger(config.nSimulations))
+    return "Number of simulations must be a whole number.";
   return null;
 }
 

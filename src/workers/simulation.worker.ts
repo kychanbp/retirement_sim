@@ -20,18 +20,21 @@ function progress(phase: string, percent: number, detail: string) {
 
 function runFullPipeline(config: HouseholdConfig) {
   const startTime = performance.now();
+  const valuationDate = new Date(); // capture once so all phases use the same date
 
   // Phase 1: Core simulations
   progress("core", 0, "Running Option A simulation...");
   const optionA = runSimulation(config, {
     includeProperty: false,
     storePaths: true,
+    valuationDate,
   });
 
   progress("core", 50, "Running Option C simulation...");
   const optionC = runSimulation(config, {
     includeProperty: true,
     storePaths: true,
+    valuationDate,
   });
   progress("core", 100, "Core simulations complete");
 
@@ -65,6 +68,7 @@ function runFullPipeline(config: HouseholdConfig) {
     includeProperty: false,
     storePaths: false,
     forceSequenceRisk: true,
+    valuationDate,
   });
   const sequenceRiskA: SequenceRiskResult = {
     normalSuccessRate: optionA.successRate,
@@ -76,6 +80,7 @@ function runFullPipeline(config: HouseholdConfig) {
     includeProperty: true,
     storePaths: false,
     forceSequenceRisk: true,
+    valuationDate,
   });
   const sequenceRiskC: SequenceRiskResult = {
     normalSuccessRate: optionC.successRate,
